@@ -21,6 +21,7 @@ export class ManageOrderComponent implements OnInit {
     'price',
     'quantity',
     'total',
+    'bill',
     'edit',
   ];
   dataSource: any = [];
@@ -29,6 +30,7 @@ export class ManageOrderComponent implements OnInit {
   products: any = [];
   price: any;
   totalAmount: number = 0;
+  bill: number = 0;
   responseMessage: any;
 
   constructor(
@@ -44,6 +46,7 @@ export class ManageOrderComponent implements OnInit {
   ngOnInit(): void {
     this.getCategorys();
     this.manageOrderForm = this.formBulider.group({
+      bill: [0, [Validators.required]],
       name: [
         null,
         [Validators.required, Validators.pattern(GlobalConstants.nameRegex)],
@@ -101,7 +104,6 @@ export class ManageOrderComponent implements OnInit {
   }
 
   getProductDetails(value: any) {
-    //console.log("inside getProductDetails");
     this.productService.getById(value.id).subscribe(
       (response: any) => {
         this.price = response.price;
@@ -142,8 +144,6 @@ export class ManageOrderComponent implements OnInit {
 
   validateProductAdd() {
     var fromData = this.manageOrderForm.value;
-
-    //var totalValue = this.manageOrderForm.contols['total'].value;
     var Value = this.manageOrderForm.controls['price'].value;
     if (
       Value === null ||
@@ -186,7 +186,6 @@ export class ManageOrderComponent implements OnInit {
         total: fromData.total,
       });
       this.dataSource = [...this.dataSource];
-      //alert("Order Added Successfully");
       this.SnackbarService.openSnackBar(
         GlobalConstants.productAdded,
         'Success'
@@ -215,11 +214,21 @@ export class ManageOrderComponent implements OnInit {
     };
 
     this.billService.generateReport(data).subscribe(
-      (resonse: any) => {
-        this.downloadFile(resonse?.uuid);
+      (response: any) => {
+        // Extract bill from response and store it
+        this.bill = response.bill || 0;
+        
+        // Update dataSource with bill for all items
+        this.dataSource = this.dataSource.map((item: any) => ({
+          ...item,
+          bill: this.bill
+        }));
+        
+        this.downloadFile(response?.bill);
         this.manageOrderForm.reset();
         this.dataSource = [];
         this.totalAmount = 0;
+        this.bill = 0;
       },
       (error: any) => {
         console.log(error.error?.message);
@@ -235,13 +244,13 @@ export class ManageOrderComponent implements OnInit {
       }
     );
   }
+  
   downloadFile(fileName: string) {
     var data = {
-      uuid: fileName,
+      bill: fileName,
     };
-    this.billService.getPdf(data).subscribe((resonse: any) => {
-      saveAs(resonse, fileName + '.pdf');
+    this.billService.getPdf(data).subscribe((response: any) => {
+      saveAs(response, 'Bill_' + fileName + '.pdf');
     });
   }
 }
-

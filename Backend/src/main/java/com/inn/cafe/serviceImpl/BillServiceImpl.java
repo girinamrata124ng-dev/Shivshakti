@@ -48,22 +48,19 @@ public class BillServiceImpl implements BillService {
     @Autowired
     EmailUtil emailUtil;
 
-    // ===================== GENERATE BILL PDF =====================
     @Override
     public ResponseEntity<String> generateReport(Map<String, Object> requestMap) {
         log.info("Inside generateReport");
 
         try {
-            String fileName;
-
             if (validateResquestMap(requestMap)) {
-                if (requestMap.containsKey("isGenerate") && !(Boolean) requestMap.get("isGenerate")) {
-                    fileName = (String) requestMap.get("uuid");
-                } else {
-                    fileName = CafeUtils.getUUID();
-                    requestMap.put("uuid", fileName);
-                    insertBill(requestMap);
-                }
+                // Insert bill first to get bill number
+                insertBill(requestMap);
+                
+                Integer bill = (Integer) requestMap.get("bill");
+                String fileName = "Bill_" + bill;
+
+                log.info("Bill generated with bill: {}", bill);
 
                 String data = "Name: " + requestMap.get("name") + "\n"
                         + "Contact Number: " + requestMap.get("contactNumber");
@@ -79,8 +76,8 @@ public class BillServiceImpl implements BillService {
                 header.setAlignment(Element.ALIGN_CENTER);
                 document.add(header);
 
-                // Add Bill No
-                document.add(new Paragraph("Bill No: " + requestMap.get("billNo") + "\n\n", getFont("Data")));
+                // Add Bill
+                document.add(new Paragraph("Bill: " + bill + "\n\n", getFont("Data")));
 
                 document.add(new Paragraph(data + "\n\n", getFont("Data")));
 
@@ -102,12 +99,15 @@ public class BillServiceImpl implements BillService {
                         getFont("Data")));
 
                 document.close();
-                return new ResponseEntity<>("{\"uuid\":\"" + fileName + "\", \"billNo\":\"" + requestMap.get("billNo") + "\"}", HttpStatus.OK);
+                log.info("PDF generated successfully for bill: {}", bill);
+                return new ResponseEntity<>("{\"bill\":\"" + bill + "\"}", HttpStatus.OK);
             }
 
+            log.warn("Invalid request map for generateReport");
             return CafeUtils.getResponeEntity("Required data not found", HttpStatus.BAD_REQUEST);
 
         } catch (Exception ex) {
+            log.error("Error in generateReport", ex);
             ex.printStackTrace();
         }
 
@@ -115,21 +115,28 @@ public class BillServiceImpl implements BillService {
                 HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    // ===================== GET BILLS =====================
     @Override
     public ResponseEntity<List<Bill>> getBills() {
-        List<Bill> list;
+        try {
+            List<Bill> list;
 
-        if (jwtFilter.isAdmin()) {
-            list = billDao.getAllBills();
-        } else {
-            list = billDao.getBillByUserName(jwtFilter.getCurrentUsername());
+            if (jwtFilter.isAdmin()) {
+                list = billDao.getAllBills();
+            } else {
+                String username = jwtFilter.getCurrentUsername();
+                log.info("Getting bills for user: {}", username);
+                list = billDao.getBillByUserName(username);
+            }
+
+            log.info("Found {} bills", list.size());
+            return new ResponseEntity<>(list, HttpStatus.OK);
+        } catch (Exception ex) {
+            log.error("Error in getBills", ex);
+            ex.printStackTrace();
+            return new ResponseEntity<>(new ArrayList<>(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
-        return new ResponseEntity<>(list, HttpStatus.OK);
     }
 
-    // ===================== GET PDF =====================
     @Override
     public ResponseEntity<byte[]> getPdf(Map<String, Object> requestMap) {
         log.info("Inside getPdf {}", requestMap);
@@ -137,46 +144,92 @@ public class BillServiceImpl implements BillService {
         try {
             byte[] byteArray = new byte[0];
 
-            if (!requestMap.containsKey("uuid")) {
+            if (!requestMap.containsKey("bill")) {
+                log.warn("bill not found in request");
                 return new ResponseEntity<>(byteArray, HttpStatus.BAD_REQUEST);
             }
 
-            String filePath = CafeConstants.STORE_LOCATION + "\\" +
-                    requestMap.get("uuid") + ".pdf";
+            // Handle both String and Integer types for bill
+            Integer bill = null;
+            Object billObj = requestMap.get("bill");
+            if (billObj instanceof Integer) {
+                bill = (Integer) billObj;
+            } else if (billObj instanceof String) {
+                bill = Integer.parseInt((String) billObj);
+            } else if (billObj instanceof Number) {
+                bill = ((Number) billObj).intValue();
+            }
+
+            if (bill == null) {
+                log.warn("bill is null after conversion");
+                return new ResponseEntity<>(byteArray, HttpStatus.BAD_REQUEST);
+            }
+
+            String fileName = "Bill_" + bill;
+            String filePath = CafeConstants.STORE_LOCATION + "\\" + fileName + ".pdf";
+
+            log.info("Looking for PDF at: {}", filePath);
 
             if (!CafeUtils.isFileExist(filePath)) {
-                requestMap.put("isGenerate", false);
-                generateReport(requestMap);
+                log.warn("PDF not found, attempting to regenerate");
+                Optional<Bill> billOptional = billDao.findByBill(bill);
+                if (billOptional.isPresent()) {
+                    Bill billEntity = billOptional.get();
+                    
+                    Map<String, Object> regenerateMap = new HashMap<>();
+                    regenerateMap.put("bill", bill);
+                    regenerateMap.put("name", billEntity.getName());
+                    regenerateMap.put("contactNumber", billEntity.getContactNumber());
+                    regenerateMap.put("totalAmount", String.valueOf(billEntity.getTotal()));
+                    regenerateMap.put("productDetails", billEntity.getProductDetails());
+                    
+                    generateReport(regenerateMap);
+                } else {
+                    log.warn("Bill not found for bill: {}", bill);
+                    return new ResponseEntity<>(byteArray, HttpStatus.BAD_REQUEST);
+                }
             }
 
             byteArray = getByteArray(filePath);
+            log.info("PDF retrieved successfully");
             return new ResponseEntity<>(byteArray, HttpStatus.OK);
 
         } catch (Exception ex) {
+            log.error("Error in getPdf", ex);
             ex.printStackTrace();
         }
         return null;
     }
 
-    // ===================== DELETE BILL =====================
     @Override
-    public ResponseEntity<String> delete(Integer id) {
+    public ResponseEntity<String> delete(Integer bill) {
         try {
             if (jwtFilter.isAdmin()) {
-                Optional<Bill> optional = billDao.findById(id);
+                Optional<Bill> optional = billDao.findByBill(bill);
 
                 if (optional.isPresent()) {
-                    billDao.deleteById(id);
+                    Bill billEntity = optional.get();
+                    String fileName = "Bill_" + billEntity.getBill();
+                    String filePath = CafeConstants.STORE_LOCATION + "\\" + fileName + ".pdf";
+                    File file = new File(filePath);
+                    if (file.exists()) {
+                        file.delete();
+                    }
+                    
+                    billDao.delete(billEntity);
+                    log.info("Bill {} deleted successfully", bill);
                     return CafeUtils.getResponeEntity("Bill deleted successfully", HttpStatus.OK);
                 }
 
-                return CafeUtils.getResponeEntity("Bill id not found", HttpStatus.OK);
+                log.warn("Bill not found for deletion: {}", bill);
+                return CafeUtils.getResponeEntity("Bill not found", HttpStatus.OK);
             }
 
             return CafeUtils.getResponeEntity(CafeConstants.UNAUTHORIZED_ACCESS,
                     HttpStatus.UNAUTHORIZED);
 
         } catch (Exception ex) {
+            log.error("Error in delete", ex);
             ex.printStackTrace();
         }
 
@@ -184,21 +237,21 @@ public class BillServiceImpl implements BillService {
                 HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    // ===================== UPDATE BILL STATUS =====================
     @Override
-    public ResponseEntity<String> updateStatus(Map<String, String> requestMap, Integer id) {
+    public ResponseEntity<String> updateStatus(Map<String, String> requestMap, Integer bill) {
         try {
             if (jwtFilter.isAdmin()) {
-                Optional<Bill> optional =
-                        billDao.findById(id);
+                Optional<Bill> optional = billDao.findByBill(bill);
 
                 if (!optional.isPresent()) {
-                    return CafeUtils.getResponeEntity("Bill id not found", HttpStatus.OK);
+                    log.warn("Bill not found for status update: {}", bill);
+                    return CafeUtils.getResponeEntity("Bill not found", HttpStatus.OK);
                 }
 
-                Bill bill = optional.get();
-                bill.setStatus(requestMap.get("status")); // Completed
-                billDao.save(bill);
+                Bill billEntity = optional.get();
+                billEntity.setStatus(requestMap.get("status"));
+                billDao.save(billEntity);
+                log.info("Bill {} status updated to {}", bill, requestMap.get("status"));
 
                 return CafeUtils.getResponeEntity("Bill status updated successfully",
                         HttpStatus.OK);
@@ -208,6 +261,7 @@ public class BillServiceImpl implements BillService {
                     HttpStatus.UNAUTHORIZED);
 
         } catch (Exception ex) {
+            log.error("Error in updateStatus", ex);
             ex.printStackTrace();
         }
 
@@ -215,20 +269,25 @@ public class BillServiceImpl implements BillService {
                 HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    // ===================== PRIVATE METHODS =====================
     private void insertBill(Map<String, Object> requestMap) {
         try {
-            Bill bill = new Bill();
-            bill.setUuid((String) requestMap.get("uuid"));
-            bill.setName((String) requestMap.get("name"));
-            bill.setContactNumber((String) requestMap.get("contactNumber"));
-            bill.setTotal(Integer.parseInt((String) requestMap.get("totalAmount")));
-            bill.setProductDetails((String) requestMap.get("productDetails"));
-            bill.setCreatedBy(jwtFilter.getCurrentUsername());
-            bill.setStatus("In Progress");
-            billDao.save(bill);
+            Bill billEntity = new Bill();
+            billEntity.setName((String) requestMap.get("name"));
+            billEntity.setContactNumber((String) requestMap.get("contactNumber"));
+            billEntity.setTotal(Integer.parseInt((String) requestMap.get("totalAmount")));
+            billEntity.setProductDetails((String) requestMap.get("productDetails"));
+            billEntity.setCreatedBy(jwtFilter.getCurrentUsername());
+            billEntity.setStatus("In Progress");
+            
+            log.info("Inserting bill with createdBy: {}", jwtFilter.getCurrentUsername());
+            
+            Bill savedBill = billDao.save(billEntity);
+            
+            requestMap.put("bill", savedBill.getBill());
+            log.info("Bill saved with bill: {}", savedBill.getBill());
 
         } catch (Exception ex) {
+            log.error("Error in insertBill", ex);
             ex.printStackTrace();
         }
     }
@@ -280,4 +339,3 @@ public class BillServiceImpl implements BillService {
         return byteArray;
     }
 }
-

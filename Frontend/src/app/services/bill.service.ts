@@ -30,14 +30,14 @@ export class BillService {
     return this.httpClient.get(this.url + '/bill/getBillsByStatus/' + status);
   }
 
-  updateStatus(id: any, status: string) {
-    return this.httpClient.post(this.url + '/bill/updateStatus/' + id, { status: status }, {
+  updateStatus(bill: any, status: string) {
+    return this.httpClient.post(this.url + '/bill/updateStatus/' + bill, { status: status }, {
       headers: new HttpHeaders().set('Content-Type', 'application/json'),
     });
   }
 
-  delete(id: any) {
-    return this.httpClient.post(this.url + '/bill/delete/' + id, {
+  delete(bill: any) {
+    return this.httpClient.post(this.url + '/bill/delete/' + bill, {
       headers: new HttpHeaders().set('Content-Type', 'application/json'),
     });
   }

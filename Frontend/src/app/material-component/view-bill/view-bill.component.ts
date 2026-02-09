@@ -16,7 +16,7 @@ import { ConfirmationComponent } from '../dialog/confirmation/confirmation.compo
 })
 export class ViewBillComponent implements OnInit {
   displayedColumns: string[] = [
-    'billNo',
+    'bill',
     'name',
     'contactNumber',
     'total',
@@ -89,14 +89,14 @@ export class ViewBillComponent implements OnInit {
     const dialogRef = this.dialog.open(ConfirmationComponent, dialogConfog);
     const sub = dialogRef.componentInstance.onEmistStatusChange.subscribe(
       (response) => {
-        this.deleteBill(values.id);
+        this.deleteBill(values.bill);
         dialogRef.close();
       }
     );
   }
 
-  deleteBill(id: any) {
-    this.billservice.delete(id).subscribe(
+  deleteBill(bill: any) {
+    this.billservice.delete(bill).subscribe(
       (response: any) => {
         this.tableData();
         this.responseMessage = response?.message;
@@ -119,10 +119,10 @@ export class ViewBillComponent implements OnInit {
 
   changeStatus(values: any) {
     const newStatus = values.status === 'In Progress' ? 'Completed' : 'In Progress';
-    this.billservice.updateStatus(values.id, newStatus).subscribe(
+    this.billservice.updateStatus(values.bill, newStatus).subscribe(
       (response: any) => {
         this.tableData();
-        this.responseMessage = response?.messag;
+        this.responseMessage = response?.message;
         this.SnackbarService.openSnackBar(this.responseMessage, 'success');
       },
       (error: any) => {
@@ -142,19 +142,14 @@ export class ViewBillComponent implements OnInit {
 
   downloadReportAction(values: any) {
     var data = {
-      name: values.name,
-      uuid: values.uuid,
-      contactNumber: values.contactNumber,
-      totalAmount: values.total.toString(),
-      productDetails: values.productDetails,
+      bill: values.bill,
     };
-    this.downloadFile(values.uuid, data);
+    this.downloadFile(values.bill, data);
   }
 
   downloadFile(fileName: string, data: any) {
     this.billservice.getPdf(data).subscribe((response: any) => {
-      saveAs(response, fileName + '.pdf');
+      saveAs(response, 'Bill_' + fileName + '.pdf');
     });
   }
 }
-
