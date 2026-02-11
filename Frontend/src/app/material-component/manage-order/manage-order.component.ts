@@ -3,7 +3,6 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { BillService } from 'src/app/services/bill.service';
-import { CategoryService } from 'src/app/services/category.service';
 import { ProductService } from 'src/app/services/product.service';
 import { SnackbarService } from 'src/app/services/snackbar.service';
 import { GlobalConstants } from 'src/app/shared/global-constants';
@@ -20,13 +19,14 @@ export class ManageOrderComponent implements OnInit {
     'category',
     'price',
     'quantity',
+    'plus',
+    'waste',
     'total',
     'bill',
     'edit',
   ];
   dataSource: any = [];
   manageOrderForm: any = FormGroup;
-  categorys: any = [];
   products: any = [];
   price: any;
   totalAmount: number = 0;
@@ -35,7 +35,6 @@ export class ManageOrderComponent implements OnInit {
 
   constructor(
     private formBulider: FormBuilder,
-    private categoryService: CategoryService,
     private productService: ProductService,
     private billService: BillService,
     private dialog: MatDialog,
@@ -44,7 +43,7 @@ export class ManageOrderComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.getCategorys();
+    this.getProducts();
     this.manageOrderForm = this.formBulider.group({
       bill: [0, [Validators.required]],
       name: [
@@ -53,40 +52,16 @@ export class ManageOrderComponent implements OnInit {
       ],
       contactNumber: [null, [Validators.required]],
       product: [null, [Validators.required]],
-      category: [null, [Validators.required]],
       quantity: [null, [Validators.required]],
       price: [null, [Validators.required]],
       total: [0, [Validators.required]],
     });
   }
 
-  getCategorys() {
-    this.categoryService.getFilteredCategorys().subscribe(
-      (response: any) => {
-        this.categorys = response;
-      },
-      (error: any) => {
-        console.log(error.error?.message);
-        if (error.error?.message) {
-          this.responseMessage = error.error?.message;
-        } else {
-          this.responseMessage = GlobalConstants.genericError;
-        }
-        this.SnackbarService.openSnackBar(
-          this.responseMessage,
-          GlobalConstants.error
-        );
-      }
-    );
-  }
-
-  getProductsByCategory(value: any) {
-    this.productService.getProductByCategory(value.id).subscribe(
+  getProducts() {
+    this.productService.getProducts().subscribe(
       (response: any) => {
         this.products = response;
-        this.manageOrderForm.controls['price'].setValue('');
-        this.manageOrderForm.controls['quantity'].setValue('');
-        this.manageOrderForm.controls['total'].setValue(0);
       },
       (error: any) => {
         console.log(error.error?.message);
@@ -180,8 +155,10 @@ export class ManageOrderComponent implements OnInit {
       this.dataSource.push({
         id: fromData.product.id,
         name: fromData.product.name,
-        category: fromData.category.name,
+        category: 'General',
         quantity: fromData.quantity,
+        plus: null,
+        waste: null,
         price: fromData.price,
         total: fromData.total,
       });

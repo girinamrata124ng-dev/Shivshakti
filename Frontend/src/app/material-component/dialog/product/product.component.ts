@@ -1,7 +1,6 @@
 import { Component, Inject, OnInit, EventEmitter } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
-import { CategoryService } from 'src/app/services/category.service';
 import { ProductService } from 'src/app/services/product.service';
 import { SnackbarService } from 'src/app/services/snackbar.service';
 import { GlobalConstants } from 'src/app/shared/global-constants';
@@ -18,15 +17,13 @@ export class ProductComponent implements OnInit {
   dialogAction: any = 'Add';
   action: any = 'Add';
   responseMessage: any;
-  categorys: any = [];
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public dialogData: any,
     private formBulider: FormBuilder,
     protected productService: ProductService,
     public dialogRef: MatDialogRef<ProductComponent>,
-    private snackbarService: SnackbarService,
-    private categoryService: CategoryService
+    private snackbarService: SnackbarService
   ) {}
 
   ngOnInit(): void {
@@ -35,7 +32,6 @@ export class ProductComponent implements OnInit {
         null,
         [Validators.required, Validators.pattern(GlobalConstants.nameRegex)],
       ],
-      categoryId: [null, Validators.required],
       price: [null, Validators.required],
       description: [null, Validators.required],
     });
@@ -44,27 +40,6 @@ export class ProductComponent implements OnInit {
       this.action = 'Update';
       this.productForm.patchValue(this.dialogData.data);
     }
-    this.getCategorys();
-  }
-
-  getCategorys() {
-    this.categoryService.getCategorys().subscribe(
-      (response: any) => {
-        this.categorys = response;
-      },
-      (error) => {
-        console.error(error);
-        if (error.error?.message) {
-          this.responseMessage = error.error?.message;
-        } else {
-          this.responseMessage = GlobalConstants.genericError;
-        }
-        this.snackbarService.openSnackBar(
-          this.responseMessage,
-          GlobalConstants.error
-        );
-      }
-    );
   }
 
   handleSubmit() {

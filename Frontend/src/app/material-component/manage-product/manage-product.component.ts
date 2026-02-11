@@ -16,7 +16,6 @@ import { ConfirmationComponent } from '../dialog/confirmation/confirmation.compo
 export class ManageProductComponent implements OnInit {
   displayedColumns: string[] = [
     'name',
-    'categoryName',
     'description',
     'price',
     'edit',

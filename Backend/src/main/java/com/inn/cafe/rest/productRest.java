@@ -21,9 +21,6 @@ public interface productRest {
     @PostMapping(path = "/delete/{id}")
     public ResponseEntity<String> delete(@PathVariable Integer id);
 
-    @GetMapping(path = "/getByCategory/{id}")
-    public ResponseEntity<List<ProductWrapper>> getByCategory(@PathVariable Integer id);
-
     @GetMapping(path = "/getProductById/{id}")
     public ResponseEntity<ProductWrapper> getProductById(@PathVariable Integer id);
 
