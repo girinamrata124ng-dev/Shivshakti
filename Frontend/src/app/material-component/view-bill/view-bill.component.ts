@@ -25,6 +25,7 @@ export class ViewBillComponent implements OnInit {
   ];
   inProgressDataSource: any;
   completedDataSource: any;
+  deliveredDataSource: any;
   responseMessage: any;
 
   constructor(
@@ -44,9 +45,11 @@ export class ViewBillComponent implements OnInit {
         // Filter bills by status
         const inProgress = response.filter((bill: any) => bill.status === 'In Progress' || !bill.status);
         const completed = response.filter((bill: any) => bill.status === 'Completed');
+        const delivered = response.filter((bill: any) => bill.status === 'Delivered');
 
         this.inProgressDataSource = new MatTableDataSource(inProgress);
         this.completedDataSource = new MatTableDataSource(completed);
+        this.deliveredDataSource = new MatTableDataSource(delivered);
       },
       (error: any) => {
         console.log(error.error?.message);
@@ -118,7 +121,19 @@ export class ViewBillComponent implements OnInit {
   }
 
   changeStatus(values: any) {
-    const newStatus = values.status === 'In Progress' ? 'Completed' : 'In Progress';
+    let newStatus: string;
+    
+    // 3-stage workflow: In Progress → Completed → Delivered → Completed
+    if (values.status === 'In Progress' || !values.status) {
+      newStatus = 'Completed';
+    } else if (values.status === 'Completed') {
+      newStatus = 'Delivered';
+    } else if (values.status === 'Delivered') {
+      newStatus = 'Completed';
+    } else {
+      newStatus = 'Completed';
+    }
+    
     this.billservice.updateStatus(values.bill, newStatus).subscribe(
       (response: any) => {
         this.tableData();

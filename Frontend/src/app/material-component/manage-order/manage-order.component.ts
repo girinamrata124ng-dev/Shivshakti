@@ -16,7 +16,6 @@ import { saveAs } from 'file-saver';
 export class ManageOrderComponent implements OnInit {
   displayedColumns: string[] = [
     'name',
-    'category',
     'price',
     'quantity',
     'plus',
