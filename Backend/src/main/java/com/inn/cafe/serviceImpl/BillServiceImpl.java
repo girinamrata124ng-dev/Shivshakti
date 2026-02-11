@@ -72,7 +72,7 @@ public class BillServiceImpl implements BillService {
 
                 setRectaangleInPdf(document);
 
-                Paragraph header = new Paragraph("Cafe Management System", getFont("Header"));
+                Paragraph header = new Paragraph("Shivshakti Dal Udyog", getFont("Header"));
                 header.setAlignment(Element.ALIGN_CENTER);
                 document.add(header);
 
