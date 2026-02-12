@@ -15,4 +15,6 @@ public interface BillService {
     ResponseEntity<String> delete(Integer id);
 
     ResponseEntity<String> updateStatus(Map<String, String> requestMap, Integer id);
+    
+    ResponseEntity<String> updateProductDetails(Map<String, Object> requestMap);
 }

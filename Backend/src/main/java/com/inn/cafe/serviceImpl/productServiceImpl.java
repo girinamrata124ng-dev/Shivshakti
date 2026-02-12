@@ -2,7 +2,6 @@ package com.inn.cafe.serviceImpl;
 
 import com.inn.cafe.JWT.CustomerUserDetailsService;
 import com.inn.cafe.JWT.JwtFilter;
-import com.inn.cafe.POJO.Category;
 import com.inn.cafe.POJO.Product;
 import com.inn.cafe.constents.CafeConstants;
 import com.inn.cafe.dao.productDao;
@@ -123,16 +122,6 @@ public class productServiceImpl implements productService {
     }
 
     @Override
-    public ResponseEntity<List<ProductWrapper>> getByCategory(Integer id) {
-        try {
-            return new ResponseEntity<>(productDao.getByCategory(id), HttpStatus.OK);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return new ResponseEntity<>(new ArrayList<>(), HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    @Override
     public ResponseEntity<ProductWrapper> getProductById(Integer id) {
         try {
             return new ResponseEntity<>(productDao.getProductById(id), HttpStatus.OK);
@@ -175,15 +164,12 @@ public class productServiceImpl implements productService {
 
     private Product getProductFromMap(Map<String, String> requestMap, boolean isAdd) {
         Product product = new Product();
-        Category category = new Category();
-        category.setId(Integer.parseInt(requestMap.get("categoryId")));
 
         if (isAdd) {
             product.setId(Integer.parseInt(requestMap.get("id")));
         } else {
             product.setStatus("true");
         }
-        product.setCategory(category);
         product.setName(requestMap.get("name"));
         product.setDescription(requestMap.get("description"));
         product.setPrice(Integer.parseInt(requestMap.get("price")));

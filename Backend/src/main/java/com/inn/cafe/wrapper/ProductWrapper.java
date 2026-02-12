@@ -11,16 +11,12 @@ public class ProductWrapper {
     String description;
     Integer price;
     String status;
-    Integer categoryId;
-    String categoryName;
 
-    public ProductWrapper(Integer id, String name , String description , Integer price , Integer categoryId , String categoryName , String status ) {
+    public ProductWrapper(Integer id, String name , String description , Integer price , String status ) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.price = price;
-        this.categoryId = categoryId;
-        this.categoryName = categoryName;
         this.status = status;
     }
 
