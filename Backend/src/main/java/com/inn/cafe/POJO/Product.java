@@ -8,12 +8,9 @@ import org.hibernate.annotations.DynamicUpdate;
 import java.io.Serializable;
 
 
-
-@NamedQuery(name = "Product.getAllProduct", query = "select new com.inn.cafe.wrapper.ProductWrapper(u.id , u.name , u.description , u.price , u.category.id , u.category.name , u.status) from Product u")
+@NamedQuery(name = "Product.getAllProduct", query = "select new com.inn.cafe.wrapper.ProductWrapper(u.id , u.name , u.description , u.price , u.status) from Product u")
 
 @NamedQuery(name = "Product.updateProductStatus" , query = "update Product u set u.status =:status where u.id =:id")
-
-@NamedQuery(name = "Product.getByCategory", query = "select new com.inn.cafe.wrapper.ProductWrapper(u.id , u.name , u.description , u.price , u.category.id , u.category.name , u.status  ) from Product u where u.category.id=:id and u.status='true'")
 
 @NamedQuery(name = "Product.getProductById", query = "select new com.inn.cafe.wrapper.ProductWrapper(u.id , u.name , u.description , u.price) from Product u where u.id=:id")
 
@@ -36,11 +33,6 @@ public class Product implements Serializable {
 
     @Column(name = "name")
     private String name;
-
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_fk", nullable = false)
-    private Category category;
 
     @Column(name = "description")
     private String description;

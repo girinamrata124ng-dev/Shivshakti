@@ -9,9 +9,11 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 export class ViewBillProductsComponent implements OnInit {
   dataplayedColumns: string[] = [
     'name',
-    'category',
     'price',
     'quantity',
+    'plus',
+    'waste',
+    'wastage2',
     'total',
   ];
   dataSource: any;

@@ -81,4 +81,18 @@ public class BillRestImpl implements BillRest {
             );
         }
     }
+
+    // ✅ REQUIRED method from BillRest
+    @Override
+    public ResponseEntity<String> updateProductDetails(Map<String, Object> requestMap) {
+        try {
+            return billService.updateProductDetails(requestMap);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return CafeUtils.getResponeEntity(
+                    CafeConstants.SOMETHING_WENT_WRONG,
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
 }

@@ -9,15 +9,15 @@ import java.io.Serializable;
 
 @NamedQuery(
         name = "Bill.getAllBills",
-        query = "select b from bill b order by b.id desc"
+        query = "select b from bill b order by b.bill desc"
 )
 @NamedQuery(
         name = "Bill.getBillByUserName",
-        query = "select b from bill b where b.createdBy=:username order by b.id desc"
+        query = "select b from bill b where b.createdBy=:username order by b.bill desc"
 )
 @NamedQuery(
         name = "Bill.getBillsByStatus",
-        query = "select b from bill b where b.status = :status order by b.id desc"
+        query = "select b from bill b where b.status = :status order by b.bill desc"
 )
 
 @Getter
@@ -34,11 +34,8 @@ public class Bill implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "billNo")
-    private Integer billNo;
-
-    @Column(name = "uuid")
-    private String uuid;
+    @Column(name = "bill")
+    private Integer bill;
 
     @Column(name = "name")
     private String name;
@@ -49,12 +46,12 @@ public class Bill implements Serializable {
     @Column(name = "total")
     private Integer total;
 
-    @Column(name = "productdetails", columnDefinition = "json")
+    @Column(name = "productdetails", columnDefinition = "TEXT")
     private String productDetails;
 
     @Column(name = "createdby")
     private String createdBy;
 
     @Column(name = "status")
-    private String status; // "In Progress" | "Completed"
+    private String status;
 }
