@@ -8,6 +8,7 @@ import { GlobalConstants } from 'src/app/shared/global-constants';
 import { ViewBillProductsComponent } from '../dialog/view-bill-products/view-bill-products.component';
 import { SnackbarService } from 'src/app/services/snackbar.service';
 import { ConfirmationComponent } from '../dialog/confirmation/confirmation.component';
+import { CompleteOrderComponent } from '../dialog/complete-order/complete-order.component';
 
 @Component({
   selector: 'app-view-bill',
@@ -72,15 +73,48 @@ export class ViewBillComponent implements OnInit {
   }
 
   handleViewAction(values: any) {
-    const dialogConfog = new MatDialogConfig();
-    dialogConfog.data = {
-      data: values,
-    };
-    dialogConfog.width = '100%';
-    const dialogRef = this.dialog.open(ViewBillProductsComponent, dialogConfog);
-    this.router.events.subscribe(() => {
-      dialogRef.close();
-    });
+    // Fetch fresh data for this specific bill to get updated wastage2 values
+    this.billservice.getBills().subscribe(
+      (response: any) => {
+        // Find the bill with the most up-to-date product details
+        const freshBillData = response.find((bill: any) => bill.bill === values.bill);
+        if (freshBillData) {
+          const dialogConfog = new MatDialogConfig();
+          dialogConfog.data = {
+            data: freshBillData,
+          };
+          dialogConfog.width = '100%';
+          const dialogRef = this.dialog.open(ViewBillProductsComponent, dialogConfog);
+          this.router.events.subscribe(() => {
+            dialogRef.close();
+          });
+        } else {
+          // Fallback to original data if not found
+          const dialogConfog = new MatDialogConfig();
+          dialogConfog.data = {
+            data: values,
+          };
+          dialogConfog.width = '100%';
+          const dialogRef = this.dialog.open(ViewBillProductsComponent, dialogConfog);
+          this.router.events.subscribe(() => {
+            dialogRef.close();
+          });
+        }
+      },
+      (error: any) => {
+        console.log(error.error?.message);
+        // Fallback to original data on error
+        const dialogConfog = new MatDialogConfig();
+        dialogConfog.data = {
+          data: values,
+        };
+        dialogConfog.width = '100%';
+        const dialogRef = this.dialog.open(ViewBillProductsComponent, dialogConfog);
+        this.router.events.subscribe(() => {
+          dialogRef.close();
+        });
+      }
+    );
   }
 
   handleDeleteAction(values: any) {
@@ -121,38 +155,51 @@ export class ViewBillComponent implements OnInit {
   }
 
   changeStatus(values: any) {
-    let newStatus: string;
-    
-    // 3-stage workflow: In Progress → Completed → Delivered → Completed
+    // For In Progress bills, open the Complete Order dialog with Wastage 2 editing
     if (values.status === 'In Progress' || !values.status) {
-      newStatus = 'Completed';
-    } else if (values.status === 'Completed') {
-      newStatus = 'Delivered';
-    } else if (values.status === 'Delivered') {
-      newStatus = 'Completed';
-    } else {
-      newStatus = 'Completed';
-    }
-    
-    this.billservice.updateStatus(values.bill, newStatus).subscribe(
-      (response: any) => {
+      const dialogConfig = new MatDialogConfig();
+      dialogConfig.data = {
+        data: values,
+      };
+      dialogConfig.width = '100%';
+      const dialogRef = this.dialog.open(CompleteOrderComponent, dialogConfig);
+      
+      // Refresh table data after dialog closes
+      dialogRef.afterClosed().subscribe(() => {
         this.tableData();
-        this.responseMessage = response?.message;
-        this.SnackbarService.openSnackBar(this.responseMessage, 'success');
-      },
-      (error: any) => {
-        console.log(error.error?.message);
-        if (error.error?.message) {
-          this.responseMessage = error.error?.message;
-        } else {
-          this.responseMessage = GlobalConstants.genericError;
-        }
-        this.SnackbarService.openSnackBar(
-          this.responseMessage,
-          GlobalConstants.error
-        );
+      });
+    } else {
+      // For Completed and Delivered, use the existing workflow
+      let newStatus: string;
+      
+      if (values.status === 'Completed') {
+        newStatus = 'Delivered';
+      } else if (values.status === 'Delivered') {
+        newStatus = 'Completed';
+      } else {
+        newStatus = 'Completed';
       }
-    );
+      
+      this.billservice.updateStatus(values.bill, newStatus).subscribe(
+        (response: any) => {
+          this.tableData();
+          this.responseMessage = response?.message;
+          this.SnackbarService.openSnackBar(this.responseMessage, 'success');
+        },
+        (error: any) => {
+          console.log(error.error?.message);
+          if (error.error?.message) {
+            this.responseMessage = error.error?.message;
+          } else {
+            this.responseMessage = GlobalConstants.genericError;
+          }
+          this.SnackbarService.openSnackBar(
+            this.responseMessage,
+            GlobalConstants.error
+          );
+        }
+      );
+    }
   }
 
   downloadReportAction(values: any) {

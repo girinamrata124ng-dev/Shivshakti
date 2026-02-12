@@ -23,8 +23,29 @@
 - [x] Update addTableHeader() to include "Wastage 2" (7 columns total)
 - [x] Update addRows() to include wastage2 data
 - [x] Change PdfPTable from 6 to 7 columns
+- [x] Add updateProductDetails() method for Wastage 2 editing
+- [x] Add regeneratePdf() method
+
+### 6. BillService.java
+- [x] Add updateProductDetails() method signature
+
+### 7. BillRest.java
+- [x] Add updateProductDetails() REST endpoint
+
+### 8. BillRestImpl.java
+- [x] Implement updateProductDetails() method
+
+### 9. bill.service.ts (Frontend)
+- [x] Add updateProductDetails() HTTP call
+
+### 10. CompleteOrderComponent (NEW)
+- [x] Create dialog for completing orders with Wastage 2 editing
+- [x] Create component TypeScript file
+- [x] Create component HTML template
+- [x] Register component in material.module.ts
 
 ## Testing
 - [ ] Test manage order page with Wastage 2 field
 - [ ] Test view bill dialog shows Wastage 2
 - [ ] Test PDF generation includes Wastage 2 column
+- [ ] Test Complete Order dialog functionality

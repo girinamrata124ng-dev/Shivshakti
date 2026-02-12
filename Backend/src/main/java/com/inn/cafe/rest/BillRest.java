@@ -25,4 +25,8 @@ public interface BillRest {
     // ✅ NEW API — Update Bill Status (ADMIN only)
     @PostMapping(path = "/updateStatus/{id}")
     ResponseEntity<String> updateStatus(@RequestBody Map<String, String> requestMap, @PathVariable Integer id);
+
+    // ✅ NEW API — Update Bill Product Details (for Wastage 2 editing)
+    @PostMapping(path = "/updateProductDetails")
+    ResponseEntity<String> updateProductDetails(@RequestBody Map<String, Object> requestMap);
 }

@@ -41,4 +41,10 @@ export class BillService {
       headers: new HttpHeaders().set('Content-Type', 'application/json'),
     });
   }
+
+  updateProductDetails(data: any) {
+    return this.httpClient.post(this.url + '/bill/updateProductDetails', data, {
+      headers: new HttpHeaders().set('Content-Type', 'application/json'),
+    });
+  }
 }

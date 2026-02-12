@@ -1,0 +1,62 @@
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.mat-dialog-content {
+  overflow-x: auto;
+}
+
+#customers {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  
+  td {
+    padding: 8px;
+    border: 1px solid #ddd;
+  }
+  
+  td:first-child {
+    width: 50%;
+  }
+}
+
+.responsive_table {
+  overflow-x: auto;
+  
+  table {
+    width: 100%;
+    min-width: 600px;
+  }
+}
+
+.mat-column-name {
+  min-width: 150px;
+}
+
+.mat-column-price,
+.mat-column-quantity,
+.mat-column-total {
+  min-width: 80px;
+}
+
+.mat-column-plus,
+.mat-column-waste,
+.mat-column-wastage2 {
+  min-width: 100px;
+}
+
+.mat-column-action {
+  min-width: 120px;
+  text-align: center;
+}
+
+.highlight-value {
+  font-weight: bold;
+  color: #1976d2;
+  background-color: #e3f2fd;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+

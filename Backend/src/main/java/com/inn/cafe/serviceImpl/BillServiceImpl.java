@@ -269,6 +269,140 @@ public class BillServiceImpl implements BillService {
                 HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
+    @Override
+    public ResponseEntity<String> updateProductDetails(Map<String, Object> requestMap) {
+        try {
+            if (jwtFilter.isAdmin()) {
+                Integer bill = (Integer) requestMap.get("bill");
+                Optional<Bill> optional = billDao.findByBill(bill);
+
+                if (!optional.isPresent()) {
+                    log.warn("Bill not found for product details update: {}", bill);
+                    return CafeUtils.getResponeEntity("Bill not found", HttpStatus.OK);
+                }
+
+                Bill billEntity = optional.get();
+                
+                // Get the current product details and calculate wastage2 values
+                String productDetailsJson = (String) requestMap.get("productDetails");
+                JSONArray jsonArray = CafeUtils.getJsonArrayFromString(productDetailsJson);
+                
+                // Calculate wastage2 values for all products and update the JSON
+                JSONArray updatedJsonArray = new JSONArray();
+                for (int i = 0; i < jsonArray.length(); i++) {
+                    Map<String, Object> product = CafeUtils.getMapFromJson(jsonArray.getString(i));
+                    calculateWastage2ForProduct(product);
+                    updatedJsonArray.put(new org.json.JSONObject(product));
+                }
+                
+                // Update product details with calculated values
+                billEntity.setProductDetails(updatedJsonArray.toString());
+                
+                // Update status if provided
+                if (requestMap.containsKey("status")) {
+                    billEntity.setStatus((String) requestMap.get("status"));
+                }
+                
+                billDao.save(billEntity);
+                log.info("Bill {} product details updated successfully with calculated wastage2 values", bill);
+                
+                // Regenerate PDF with updated product details
+                regeneratePdf(billEntity);
+                
+                return CafeUtils.getResponeEntity("Bill product details updated successfully",
+                        HttpStatus.OK);
+            }
+
+            return CafeUtils.getResponeEntity(CafeConstants.UNAUTHORIZED_ACCESS,
+                    HttpStatus.UNAUTHORIZED);
+
+        } catch (Exception ex) {
+            log.error("Error in updateProductDetails", ex);
+            ex.printStackTrace();
+        }
+
+        return CafeUtils.getResponeEntity(CafeConstants.SOMETHING_WENT_WRONG,
+                HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+    
+    private void calculateWastage2ForProduct(Map<String, Object> product) {
+        // Calculate Daal and Waste from Wastage 2
+        Object wastage2Obj = product.get("wastage2");
+        if (wastage2Obj != null) {
+            double wastage2 = Double.parseDouble(wastage2Obj.toString());
+            Object quantityObj = product.get("quantity");
+            if (quantityObj != null) {
+                double quantity = Double.parseDouble(quantityObj.toString());
+                
+                // Calculate updated quantity: quantity = quantity - wastage2
+                double updatedQuantity = Math.max(0, quantity - wastage2);
+                
+                // Calculate waste: waste = updatedQuantity / 3.33
+                double calculatedWaste = updatedQuantity / 3.33;
+                
+                // Calculate Daal: Daal = updatedQuantity - waste
+                double calculatedDaal = updatedQuantity - calculatedWaste;
+                
+                // Update the product with calculated values
+                product.put("plus", String.format("%.2f", calculatedDaal));
+                product.put("waste", String.format("%.2f", calculatedWaste));
+                
+                log.info("Calculated for product - Wastage2: {}, UpdatedQty: {}, Waste: {}, Daal: {}", 
+                        wastage2, updatedQuantity, calculatedWaste, calculatedDaal);
+            }
+        }
+    }
+    
+    private void regeneratePdf(Bill billEntity) {
+        try {
+            Integer bill = billEntity.getBill();
+            String fileName = "Bill_" + bill;
+            
+            Document document = new Document();
+            PdfWriter.getInstance(document,
+                    new FileOutputStream(CafeConstants.STORE_LOCATION + "\\" + fileName + ".pdf"));
+            document.open();
+
+            setRectaangleInPdf(document);
+
+            Paragraph header = new Paragraph("Shivshakti Dal Udyog", getFont("Header"));
+            header.setAlignment(Element.ALIGN_CENTER);
+            document.add(header);
+
+            // Add Bill
+            document.add(new Paragraph("Bill: " + bill + "\n\n", getFont("Data")));
+
+            String data = "Name: " + billEntity.getName() + "\n"
+                    + "Contact Number: " + billEntity.getContactNumber();
+            document.add(new Paragraph(data + "\n\n", getFont("Data")));
+
+            PdfPTable table = new PdfPTable(7);
+            table.setWidthPercentage(100);
+            addTableHeader(table);
+
+            JSONArray jsonArray = CafeUtils.getJsonArrayFromString(billEntity.getProductDetails());
+
+            for (int i = 0; i < jsonArray.length(); i++) {
+                Map<String, Object> product = CafeUtils.getMapFromJson(jsonArray.getString(i));
+                calculateWastage2ForProduct(product);
+                addRows(table, product);
+            }
+
+            document.add(table);
+
+            document.add(new Paragraph(
+                    "Total : " + billEntity.getTotal() + "\nThank you for visiting our website.",
+                    getFont("Data")));
+
+            document.close();
+            log.info("PDF regenerated successfully for bill: {}", bill);
+            
+        } catch (Exception ex) {
+            log.error("Error regenerating PDF", ex);
+            ex.printStackTrace();
+        }
+    }
+
     private void insertBill(Map<String, Object> requestMap) {
         try {
             Bill billEntity = new Bill();
