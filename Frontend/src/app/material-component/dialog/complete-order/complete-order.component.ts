@@ -133,5 +133,35 @@ export class CompleteOrderComponent implements OnInit {
       }
     );
   }
+
+  completeOrder() {
+    // First, save all product details with wastage2 values
+    const data = {
+      bill: this.data.bill,
+      productDetails: JSON.stringify(this.dataSource),
+      status: 'Completed'
+    };
+
+    this.billService.updateProductDetails(data).subscribe(
+      (response: any) => {
+        this.responseMessage = response?.message;
+        this.snackbarService.openSnackBar('Order completed successfully!', 'success');
+        // Close the dialog
+        this.dialogRef.close(true);
+      },
+      (error: any) => {
+        console.log(error.error?.message);
+        if (error.error?.message) {
+          this.responseMessage = error.error?.message;
+        } else {
+          this.responseMessage = GlobalConstants.genericError;
+        }
+        this.snackbarService.openSnackBar(
+          this.responseMessage,
+          GlobalConstants.error
+        );
+      }
+    );
+  }
 }
 
