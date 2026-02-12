@@ -81,7 +81,7 @@ public class BillServiceImpl implements BillService {
 
                 document.add(new Paragraph(data + "\n\n", getFont("Data")));
 
-                PdfPTable table = new PdfPTable(6);
+                PdfPTable table = new PdfPTable(7);
                 table.setWidthPercentage(100);
                 addTableHeader(table);
 
@@ -315,7 +315,7 @@ public class BillServiceImpl implements BillService {
     }
 
     private void addTableHeader(PdfPTable table) {
-        Stream.of("Name", "Quantity", "Daal", "Waste", "Price", "Sub Total")
+        Stream.of("Name", "Quantity", "Daal", "Waste", "Wastage 2", "Price", "Sub Total")
                 .forEach(title -> {
                     PdfPCell header = new PdfPCell(new Phrase(title));
                     header.setBackgroundColor(BaseColor.YELLOW);
@@ -329,6 +329,7 @@ public class BillServiceImpl implements BillService {
         table.addCell(String.valueOf(data.get("quantity")));
         table.addCell(String.valueOf(data.get("plus") != null ? data.get("plus") : "-"));
         table.addCell(String.valueOf(data.get("waste") != null ? data.get("waste") : "-"));
+        table.addCell(String.valueOf(data.get("wastage2") != null ? data.get("wastage2") : "-"));
         table.addCell(String.valueOf(data.get("price")));
         table.addCell(String.valueOf(data.get("total")));
     }

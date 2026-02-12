@@ -20,6 +20,7 @@ export class ManageOrderComponent implements OnInit {
     'quantity',
     'plus',
     'waste',
+    'wastage2',
     'total',
     'bill',
     'edit',
@@ -54,6 +55,7 @@ export class ManageOrderComponent implements OnInit {
       quantity: [null, [Validators.required]],
       price: [null, [Validators.required]],
       total: [0, [Validators.required]],
+      wastage2: [null],
     });
   }
 
@@ -135,8 +137,9 @@ export class ManageOrderComponent implements OnInit {
     var formData = this.manageOrderForm.value;
     if (
       this.totalAmount === 0 ||
-      formData.product.name === null ||
-      formData.contactNumber === null
+      !formData.product ||
+      !formData.product.name ||
+      !formData.contactNumber
     ) {
       return true;
     } else {
@@ -158,6 +161,7 @@ export class ManageOrderComponent implements OnInit {
         quantity: fromData.quantity,
         plus: null,
         waste: null,
+        wastage2: fromData.wastage2 || null,
         price: fromData.price,
         total: fromData.total,
       });
@@ -201,7 +205,21 @@ export class ManageOrderComponent implements OnInit {
         }));
         
         this.downloadFile(response?.bill);
-        this.manageOrderForm.reset();
+        
+        // Properly reset form with initial values
+        this.manageOrderForm = this.formBulider.group({
+          bill: [0, [Validators.required]],
+          name: [
+            null,
+            [Validators.required, Validators.pattern(GlobalConstants.nameRegex)],
+          ],
+          contactNumber: [null, [Validators.required]],
+          product: [null, [Validators.required]],
+          quantity: [null, [Validators.required]],
+          price: [null, [Validators.required]],
+          total: [0, [Validators.required]],
+          wastage2: [null],
+        });
         this.dataSource = [];
         this.totalAmount = 0;
         this.bill = 0;

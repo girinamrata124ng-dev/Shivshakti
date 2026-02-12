@@ -13,6 +13,7 @@ export class ViewBillProductsComponent implements OnInit {
     'quantity',
     'plus',
     'waste',
+    'wastage2',
     'total',
   ];
   dataSource: any;

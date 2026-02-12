@@ -136,6 +136,11 @@
             >
           </mat-error>
         </mat-form-field>
+
+        <mat-form-field apperence="standard" fxFlex>
+          <mat-label>Wastage 2</mat-label>
+          <input matInput formControlName="wastage2" />
+        </mat-form-field>
       </div>
     </div>
   </form>
@@ -186,6 +191,13 @@
       <th mat-header-cell *matHeaderCellDef>Waste</th>
       <td mat-cell *matCellDef="let element">
         {{ element.waste || '-' }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="wastage2">
+      <th mat-header-cell *matHeaderCellDef>Wastage 2</th>
+      <td mat-cell *matCellDef="let element">
+        {{ element.wastage2 || '-' }}
       </td>
     </ng-container>
 
