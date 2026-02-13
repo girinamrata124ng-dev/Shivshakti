@@ -1,5 +1,5 @@
 <mat-card>
-  <b><span>Manage Order</span></b>
+<b><span>ऑर्डर व्यवस्थापन</span></b>
   <button
     mat-flat-button
     color="primary"
@@ -7,12 +7,12 @@
     [disabled]="validateSubmit()"
     (click)="submitAction()"
   >
-    <mat-icon>print</mat-icon>Submit & Bill
+<mat-icon>print</mat-icon>सबमिट व बिल
   </button>
 </mat-card>
 <hr />
 <mat-card>
-  <b><span>Customer Details</span></b>
+<b><span>ग्राहक तपशील</span></b>
   <form [formGroup]="manageOrderForm">
     <div fxFlex fxLayout="column">
       <div fxLayout="row wrap">
@@ -62,12 +62,12 @@
 </mat-card>
 <hr />
 <mat-card>
-  <b><span>Select Product</span></b>
+<b><span>उत्पादन निवडा</span></b>
   <form [formGroup]="manageOrderForm">
     <div fxFlex fxLayout="column">
       <div fxLayout="row wrap">
         <mat-form-field apperence="standard" fxFlex>
-          <mat-label>Product</mat-label>
+<mat-label>उत्पादन</mat-label>
           <mat-select
             formControlName="product"
             (selectionChange)="getProductDetails($event.value)"
@@ -154,7 +154,7 @@
       Add
     </button>
     <button mat-flat-button color="primary" class="float-right">
-      <mat-icon>monetization_on</mat-icon> Total Amount: {{ totalAmount }}
+<mat-icon>monetization_on</mat-icon> एकूण रक्कम: {{ totalAmount }}
     </button>
   </div>
 </mat-card>

@@ -1,15 +1,15 @@
 <body>
     <mat-card>
-        <b><span>Dashboard</span></b>
+        <b><span>मुख्य फलक</span></b>
     </mat-card>
     <br>
     <div class="row">
         <div class="column">
             <div class="card">
                 <div class="container">
-                    <h2 class="title">Our Products Number</h2>
+                    <h2 class="title">एकूण उत्पादने</h2>
                     <h1 class="title">{{data?.product}}</h1>
-                    <p><button class="button" [routerLink]="['/cafe/product']">View Product</button></p>
+                    <p><button class="button" [routerLink]="['/cafe/product']">उत्पादन पाहा</button></p>
                 </div>
             </div>
         </div>
@@ -17,9 +17,9 @@
         <div class="column">
             <div class="card">
                 <div class="container">
-                    <h2 class="title">Our Bills Number</h2>
+                    <h2 class="title">एकूण बिले</h2>
                     <h1 class="title">{{data?.bill}}</h1>
-                    <p><button class="button" [routerLink]="['/cafe/bill']">View Bill</button></p>
+                    <p><button class="button" [routerLink]="['/cafe/bill']">बिल पाहा</button></p>
                 </div>
             </div>
         </div>
