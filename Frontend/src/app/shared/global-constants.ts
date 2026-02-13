@@ -4,7 +4,7 @@ export class GlobalConstants {
     'Something went wrong. pleases try again later';
 
   //Regex
-  public static nameRegex: string = '[a-zA-Z0-9 ]*';
+  public static nameRegex: string = '^[a-zA-Z0-9\\u0900-\\u097F]+( [a-zA-Z0-9\\u0900-\\u097F]+)*$';
 
   public static emailRegex: string =
     '[A-Za-z0-9._%-]+@[A-Za-z0-9._%-]+\\.[a-z]{2,3}';

@@ -1,14 +1,14 @@
 <mat-card>
-  <b><span>View Bill</span></b>
+  <b><span>बिल पाहणे</span></b>
 </mat-card>
 <hr />
 
 <mat-tab-group>
   <!-- In Progress Tab -->
-  <mat-tab label="In Progress">
+  <mat-tab label="सुरू आहे">
     <mat-card>
       <mat-form-field appearance="standard">
-        <mat-label>Filter</mat-label>
+        <mat-label>शोधा</mat-label>
         <input matInput (keyup)="applyFilter($event, inProgressDataSource)" #input />
       </mat-form-field>
     </mat-card>
@@ -18,29 +18,29 @@
     <div class="responsive_table">
       <table mat-table [dataSource]="inProgressDataSource" class="mat-elevation-z8">
         <ng-container matColumnDef="bill">
-          <th mat-header-cell *matHeaderCellDef>Bill</th>
+          <th mat-header-cell *matHeaderCellDef>बिल</th>
           <td mat-cell *matCellDef="let element">{{ element.bill }}</td>
         </ng-container>
 
         <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>Name</th>
+          <th mat-header-cell *matHeaderCellDef>नाव</th>
           <td mat-cell *matCellDef="let element">{{ element.name }}</td>
         </ng-container>
 
         <ng-container matColumnDef="contactNumber">
-          <th mat-header-cell *matHeaderCellDef>Contact Number</th>
+          <th mat-header-cell *matHeaderCellDef>मोबाईल नंबर</th>
           <td mat-cell *matCellDef="let element">{{ element.contactNumber }}</td>
         </ng-container>
 
         <ng-container matColumnDef="total">
-          <th mat-header-cell *matHeaderCellDef>Total</th>
+          <th mat-header-cell *matHeaderCellDef>एकूण</th>
           <td mat-cell *matCellDef="let element">{{ element.total }}</td>
         </ng-container>
 
         <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <th mat-header-cell *matHeaderCellDef>स्थिती</th>
           <td mat-cell *matCellDef="let element">
-            <span class="status-badge in-progress">{{ element.status || 'In Progress' }}</span>
+            <span class="status-badge in-progress">{{ element.status || 'सुरू आहे' }}</span>
           </td>
         </ng-container>
 
@@ -92,10 +92,10 @@
   </mat-tab>
 
   <!-- Completed Tab -->
-  <mat-tab label="Completed">
+  <mat-tab label="पूर्ण झाले">
     <mat-card>
       <mat-form-field appearance="standard">
-        <mat-label>Filter</mat-label>
+        <mat-label>शोधा</mat-label>
         <input matInput (keyup)="applyFilter($event, completedDataSource)" #input />
       </mat-form-field>
     </mat-card>
@@ -105,27 +105,27 @@
     <div class="responsive_table">
       <table mat-table [dataSource]="completedDataSource" class="mat-elevation-z8">
         <ng-container matColumnDef="bill">
-          <th mat-header-cell *matHeaderCellDef>Bill</th>
+          <th mat-header-cell *matHeaderCellDef>बिल</th>
           <td mat-cell *matCellDef="let element">{{ element.bill }}</td>
         </ng-container>
 
         <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>Name</th>
+          <th mat-header-cell *matHeaderCellDef>नाव</th>
           <td mat-cell *matCellDef="let element">{{ element.name }}</td>
         </ng-container>
 
         <ng-container matColumnDef="contactNumber">
-          <th mat-header-cell *matHeaderCellDef>Contact Number</th>
+          <th mat-header-cell *matHeaderCellDef>मोबाईल नंबर</th>
           <td mat-cell *matCellDef="let element">{{ element.contactNumber }}</td>
         </ng-container>
 
         <ng-container matColumnDef="total">
-          <th mat-header-cell *matHeaderCellDef>Total</th>
+          <th mat-header-cell *matHeaderCellDef>एकूण</th>
           <td mat-cell *matCellDef="let element">{{ element.total }}</td>
         </ng-container>
 
         <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <th mat-header-cell *matHeaderCellDef>स्थिती</th>
           <td mat-cell *matCellDef="let element">
             <span class="status-badge completed">{{ element.status }}</span>
           </td>
@@ -179,10 +179,10 @@
   </mat-tab>
 
   <!-- Delivered Tab -->
-  <mat-tab label="Delivered">
+  <mat-tab label="दिले गेले">
     <mat-card>
       <mat-form-field appearance="standard">
-        <mat-label>Filter</mat-label>
+        <mat-label>शोधा</mat-label>
         <input matInput (keyup)="applyFilter($event, deliveredDataSource)" #input />
       </mat-form-field>
     </mat-card>
@@ -192,27 +192,27 @@
     <div class="responsive_table">
       <table mat-table [dataSource]="deliveredDataSource" class="mat-elevation-z8">
         <ng-container matColumnDef="bill">
-          <th mat-header-cell *matHeaderCellDef>Bill</th>
+          <th mat-header-cell *matHeaderCellDef>बिल</th>
           <td mat-cell *matCellDef="let element">{{ element.bill }}</td>
         </ng-container>
 
         <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>Name</th>
+          <th mat-header-cell *matHeaderCellDef>नाव</th>
           <td mat-cell *matCellDef="let element">{{ element.name }}</td>
         </ng-container>
 
         <ng-container matColumnDef="contactNumber">
-          <th mat-header-cell *matHeaderCellDef>Contact Number</th>
+          <th mat-header-cell *matHeaderCellDef>मोबाईल नंबर</th>
           <td mat-cell *matCellDef="let element">{{ element.contactNumber }}</td>
         </ng-container>
 
         <ng-container matColumnDef="total">
-          <th mat-header-cell *matHeaderCellDef>Total</th>
+          <th mat-header-cell *matHeaderCellDef>एकूण</th>
           <td mat-cell *matCellDef="let element">{{ element.total }}</td>
         </ng-container>
 
         <ng-container matColumnDef="status">
-          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <th mat-header-cell *matHeaderCellDef>स्थिती</th>
           <td mat-cell *matCellDef="let element">
             <span class="status-badge delivered">{{ element.status }}</span>
           </td>
