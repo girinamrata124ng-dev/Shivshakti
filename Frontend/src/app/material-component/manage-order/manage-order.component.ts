@@ -8,6 +8,8 @@ import { SnackbarService } from 'src/app/services/snackbar.service';
 import { GlobalConstants } from 'src/app/shared/global-constants';
 import { saveAs } from 'file-saver';
 
+declare const webkitSpeechRecognition: any;
+
 @Component({
   selector: 'app-manage-order',
   templateUrl: './manage-order.component.html',
@@ -32,6 +34,8 @@ export class ManageOrderComponent implements OnInit {
   totalAmount: number = 0;
   bill: number = 0;
   responseMessage: any;
+  recognition: any;
+  isListening: boolean = false;
 
   constructor(
     private formBulider: FormBuilder,
@@ -43,6 +47,7 @@ export class ManageOrderComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.initSpeechRecognition();
     this.getProducts();
     this.manageOrderForm = this.formBulider.group({
       bill: [0, [Validators.required]],
@@ -246,5 +251,41 @@ export class ManageOrderComponent implements OnInit {
     this.billService.getPdf(data).subscribe((response: any) => {
       saveAs(response, 'Bill_' + fileName + '.pdf');
     });
+  }
+
+  initSpeechRecognition() {
+    if ('webkitSpeechRecognition' in window) {
+      this.recognition = new webkitSpeechRecognition();
+      this.recognition.continuous = false;
+      this.recognition.interimResults = false;
+      this.recognition.lang = 'mr-IN'; // Marathi (India)
+
+      this.recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        this.manageOrderForm.controls['name'].setValue(transcript);
+        this.isListening = false;
+      };
+
+      this.recognition.onerror = (event: any) => {
+        console.error('Speech recognition error', event.error);
+        this.isListening = false;
+      };
+
+      this.recognition.onend = () => {
+        this.isListening = false;
+      };
+    }
+  }
+
+  startVoiceInput() {
+    if (this.recognition) {
+      this.isListening = true;
+      this.recognition.start();
+    } else {
+      this.SnackbarService.openSnackBar(
+        'Voice input is not supported in this browser',
+        GlobalConstants.error
+      );
+    }
   }
 }

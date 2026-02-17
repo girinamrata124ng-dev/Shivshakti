@@ -11,6 +11,7 @@ import com.inn.cafe.service.BillService;
 import com.inn.cafe.utils.CafeUtils;
 import com.inn.cafe.utils.EmailUtil;
 import com.itextpdf.io.image.ImageDataFactory;
+import com.itextpdf.kernel.colors.ColorConstants;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.geom.PageSize;
@@ -54,38 +55,20 @@ public class BillServiceImpl implements BillService {
     @Autowired
     EmailUtil emailUtil;
 
-    // Font path - will be loaded lazily for each PDF
-    private String marathiFontPath = null;
+    // Font fields - will be initialized lazily
+    private PdfFont marathiFont = null;
 
-    private String getMarathiFontPath() throws IOException {
-        if (marathiFontPath == null) {
-            // Check if font exists in classpath
+    private PdfFont getMarathiFont() throws IOException {
+        if (marathiFont == null) {
             try {
-                InputStream fontStream = getClass().getClassLoader().getResourceAsStream("fonts/NotoSansDevanagari-Regular.ttf");
-                if (fontStream != null) {
-                    marathiFontPath = "fonts/NotoSansDevanagari-Regular.ttf";
-                    fontStream.close();
-                } else {
-                    marathiFontPath = null;
-                }
-            } catch (Exception e) {
-                log.warn("Could not find Marathi font: {}", e.getMessage());
-                marathiFontPath = null;
-            }
-        }
-        return marathiFontPath;
-    }
-
-    private PdfFont createMarathiFont() throws IOException {
-        String fontPath = getMarathiFontPath();
-        if (fontPath != null) {
-            try {
-                return PdfFontFactory.createFont(fontPath);
+                // Load Marathi font from classpath
+                marathiFont = PdfFontFactory.createFont("fonts/NotoSansDevanagari-Regular.ttf");
             } catch (Exception e) {
                 log.warn("Could not load Marathi font, using default: {}", e.getMessage());
+                marathiFont = PdfFontFactory.createFont();
             }
         }
-        return PdfFontFactory.createFont();
+        return marathiFont;
     }
 
     @Override
@@ -136,38 +119,43 @@ public class BillServiceImpl implements BillService {
         Document document = new Document(pdf, PageSize.A4);
         document.setMargins(0, 0, 0, 0);
 
-        PdfFont font = createMarathiFont();
+        PdfFont marathiFont = getMarathiFont();
 
         pdf.addNewPage();
 
-        // ===== Background =====
+        // ================= BACKGROUND IMAGE =================
+        java.net.URL imageUrl = getClass().getClassLoader().getResource("images/background_bill.jpg");
+        
+        if (imageUrl != null) {
+            com.itextpdf.io.image.ImageData bg = ImageDataFactory.create(imageUrl);
+
+            PdfCanvas canvas = new PdfCanvas(pdf.getFirstPage());
+            canvas.addImageFittedIntoRectangle(
+                    bg,
+                    new com.itextpdf.kernel.geom.Rectangle(0, 0, 595, 842),
+                    false
+            );
+        }
+
+        // ================= HEADER VALUES =================
         PdfCanvas canvas = new PdfCanvas(pdf.getFirstPage());
         
-        // Load image as bytes to avoid "Pdf indirect object belongs to other PDF document" error
-        byte[] imageBytes = IOUtils.toByteArray(
-                getClass().getClassLoader().getResourceAsStream("images/background_bill.jpg"));
-        canvas.addImageFittedIntoRectangle(
-                ImageDataFactory.create(imageBytes),
-                new com.itextpdf.kernel.geom.Rectangle(0, 0, 595, 842),
-                false
-        );
+        draw(canvas, name, 95f, 705f, 12, marathiFont);             
+        draw(canvas, contactNumber, 95f, 675f, 12, marathiFont);   
+        draw(canvas, String.valueOf(bill), 455f, 780f, 12, marathiFont);
 
-        // ===== Header (ALIGNED WITH LABELS) =====
-        drawText(canvas, name, 120, 635, 16, font);           // श्रीमान
-        drawText(canvas, contactNumber, 120, 597, 16, font); // मो. नं
-        drawText(canvas, String.valueOf(bill), 500, 760, 12, font); // बिल नं
+        String date = new SimpleDateFormat("dd/MM/yyyy HH:mm").format(new Date());
+        draw(canvas, date, 430f, 755f, 10, marathiFont);           
 
-        String date = new SimpleDateFormat("dd/MM/yyyy HH:mm")
-                .format(new Date());
-        drawText(canvas, date, 465, 735, 1, font);          // दिनांक
+        // ================= TABLE VALUES =================
 
-        // ===== Table (ALIGNED WITH LABELS) =====
-        float[] colX = {55, 110, 205, 250, 300, 350, 415, 475};
-        float startY = 500;
-        float rowGap = 60;
+        float[] colX = {40f, 95f, 215f, 275f, 335f, 395f, 465f, 525f};
+        float startY = 600f;
+        float rowGap = 22f;
 
         JSONArray items = CafeUtils.getJsonArrayFromString(
-                (String) requestMap.get("productDetails"));
+                (String) requestMap.get("productDetails")
+        );
 
         for (int i = 0; i < items.length(); i++) {
 
@@ -176,24 +164,24 @@ public class BillServiceImpl implements BillService {
 
             float y = startY - (i * rowGap);
 
-            drawText(canvas, String.valueOf(i + 1), colX[0], y, 16, font); // अ.क्र.
-            drawText(canvas, getValue(p, "name"), colX[1], y, 16, font);  // डाळीचे नाव
-            drawText(canvas, getValue(p, "quantity"), colX[2], y, 16, font); // वजन
-            drawText(canvas, getValue(p, "plus"), colX[4], y, 16, font); // डाळ
-            drawText(canvas, getValue(p, "waste"), colX[5], y, 16, font);// चुनी
-            drawText(canvas, getValue(p, "wastage2"), colX[6], y, 16, font);// तुट/तुकडा
-            drawText(canvas, getValue(p, "price"), colX[3], y, 16, font);// दर
-            drawText(canvas, getValue(p, "total"), colX[7], y, 16, font);// एकूण
+            draw(canvas, String.valueOf(i + 1), colX[0], y, 10, marathiFont);
+            draw(canvas, val(p, "name"), colX[1], y, 10, marathiFont);
+            draw(canvas, val(p, "quantity"), colX[2], y, 10, marathiFont);
+            draw(canvas, val(p, "plus"), colX[3], y, 10, marathiFont);
+            draw(canvas, val(p, "waste"), colX[4], y, 10, marathiFont);
+            draw(canvas, val(p, "wastage2"), colX[5], y, 10, marathiFont);
+            draw(canvas, val(p, "price"), colX[6], y, 10, marathiFont);
+            draw(canvas, val(p, "total"), colX[7], y, 10, marathiFont);
         }
 
-        // ===== Grand Total =====
-        drawText(canvas, "एकूण: ₹ " + totalAmount + "/-", 800, 800, 14, font);
+        // ================= GRAND TOTAL =================
+        draw(canvas, "₹ " + totalAmount + "/-", 465f, 150f, 14, marathiFont);
 
         document.close();
     }
 
     // Helper method to draw text at specific position
-    private void drawText(PdfCanvas canvas, String text, float x, float y, float fontSize, PdfFont font) {
+    private void draw(PdfCanvas canvas, String text, float x, float y, float fontSize, PdfFont font) {
         canvas.beginText()
                 .setFontAndSize(font, fontSize)
                 .moveText(x, y)
@@ -202,7 +190,7 @@ public class BillServiceImpl implements BillService {
     }
 
     // Helper method to get value from map
-    private String getValue(Map<String, Object> map, String key) {
+    private String val(Map<String, Object> map, String key) {
         Object value = map.get(key);
         return value != null ? String.valueOf(value) : "-";
     }

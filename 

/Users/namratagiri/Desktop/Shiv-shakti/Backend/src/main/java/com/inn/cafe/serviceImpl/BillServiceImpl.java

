@@ -1,5 +1,4 @@
 
-
 package com.inn.cafe.serviceImpl;
 
 import com.inn.cafe.JWT.CustomerUserDetailsService;
@@ -10,7 +9,8 @@ import com.inn.cafe.dao.BillDao;
 import com.inn.cafe.service.BillService;
 import com.inn.cafe.utils.CafeUtils;
 import com.inn.cafe.utils.EmailUtil;
-import com.itextpdf.io.image.ImageDataFactory;
+import com.itextpdf.kernel.colors.ColorConstants;
+import com.itextpdf.kernel.colors.DeviceRgb;
 import com.itextpdf.kernel.font.PdfFont;
 import com.itextpdf.kernel.font.PdfFontFactory;
 import com.itextpdf.kernel.geom.PageSize;
@@ -18,6 +18,14 @@ import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.kernel.pdf.canvas.PdfCanvas;
 import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.element.Image;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.element.Table;
+import com.itextpdf.layout.properties.HorizontalAlignment;
+import com.itextpdf.layout.properties.TextAlignment;
+import com.itextpdf.layout.properties.UnitValue;
+import com.itextpdf.io.image.ImageDataFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.io.IOUtils;
 import org.json.JSONArray;
@@ -28,13 +36,18 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
 
 @Slf4j
 @Service
 public class BillServiceImpl implements BillService {
+
+    // Color definitions for beautiful design
+    private static final DeviceRgb PRIMARY_COLOR = new DeviceRgb(139, 69, 19);    // Brown
+    private static final DeviceRgb SECONDARY_COLOR = new DeviceRgb(245, 222, 179); // Light brown
+    private static final DeviceRgb HEADER_COLOR = new DeviceRgb(255, 193, 7);      // Gold/Yellow
+    private static final DeviceRgb TEXT_COLOR = new DeviceRgb(51, 51, 51);        // Dark gray
 
     @Autowired
     BillDao billDao;
@@ -54,38 +67,32 @@ public class BillServiceImpl implements BillService {
     @Autowired
     EmailUtil emailUtil;
 
-    // Font path - will be loaded lazily for each PDF
-    private String marathiFontPath = null;
+    // Font fields - will be initialized lazily
+    private PdfFont marathiFont = null;
+    private PdfFont englishFont = null;
 
-    private String getMarathiFontPath() throws IOException {
-        if (marathiFontPath == null) {
-            // Check if font exists in classpath
+    private PdfFont getMarathiFont() throws IOException {
+        if (marathiFont == null) {
             try {
-                InputStream fontStream = getClass().getClassLoader().getResourceAsStream("fonts/NotoSansDevanagari-Regular.ttf");
-                if (fontStream != null) {
-                    marathiFontPath = "fonts/NotoSansDevanagari-Regular.ttf";
-                    fontStream.close();
-                } else {
-                    marathiFontPath = null;
-                }
-            } catch (Exception e) {
-                log.warn("Could not find Marathi font: {}", e.getMessage());
-                marathiFontPath = null;
-            }
-        }
-        return marathiFontPath;
-    }
-
-    private PdfFont createMarathiFont() throws IOException {
-        String fontPath = getMarathiFontPath();
-        if (fontPath != null) {
-            try {
-                return PdfFontFactory.createFont(fontPath);
+                // Load Marathi font from classpath
+                marathiFont = PdfFontFactory.createFont("fonts/NotoSansDevanagari-Regular.ttf");
             } catch (Exception e) {
                 log.warn("Could not load Marathi font, using default: {}", e.getMessage());
+                marathiFont = PdfFontFactory.createFont();
             }
         }
-        return PdfFontFactory.createFont();
+        return marathiFont;
+    }
+
+    private PdfFont getEnglishFont() {
+        if (englishFont == null) {
+            try {
+                englishFont = PdfFontFactory.createFont();
+            } catch (IOException e) {
+                log.error("Error creating English font", e);
+            }
+        }
+        return englishFont;
     }
 
     @Override
@@ -124,87 +131,207 @@ public class BillServiceImpl implements BillService {
                 HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    private void generateBeautifulPdf(String filePath,
-                                      Integer bill,
-                                      String name,
-                                      String contactNumber,
-                                      String totalAmount,
-                                      Map<String, Object> requestMap) throws Exception {
-
-        PdfWriter writer = new PdfWriter(new File(filePath));
+    private void generateBeautifulPdf(String filePath, Integer bill, String name, 
+                                       String contactNumber, String totalAmount,
+                                       Map<String, Object> requestMap) throws Exception {
+        
+        PdfWriter writer = new PdfWriter(filePath);
         PdfDocument pdf = new PdfDocument(writer);
+        
+        // Set no margins initially to allow full page background
         Document document = new Document(pdf, PageSize.A4);
         document.setMargins(0, 0, 0, 0);
 
-        PdfFont font = createMarathiFont();
+        PdfFont marathiFont = getMarathiFont();
+        PdfFont englishFont = getEnglishFont();
 
-        pdf.addNewPage();
+        log.info("Generating PDF - bill: {}, name: {}, contact: {}", bill, name, contactNumber);
+        log.info("Product details: {}", requestMap.get("productDetails"));
 
-        // ===== Background =====
-        PdfCanvas canvas = new PdfCanvas(pdf.getFirstPage());
-        
-        // Load image as bytes to avoid "Pdf indirect object belongs to other PDF document" error
-        byte[] imageBytes = IOUtils.toByteArray(
-                getClass().getClassLoader().getResourceAsStream("images/background_bill.jpg"));
-        canvas.addImageFittedIntoRectangle(
-                ImageDataFactory.create(imageBytes),
-                new com.itextpdf.kernel.geom.Rectangle(0, 0, 595, 842),
-                false
-        );
-
-        // ===== Header (ALIGNED WITH LABELS) =====
-        drawText(canvas, name, 120, 635, 16, font);           // श्रीमान
-        drawText(canvas, contactNumber, 120, 597, 16, font); // मो. नं
-        drawText(canvas, String.valueOf(bill), 500, 760, 12, font); // बिल नं
-
-        String date = new SimpleDateFormat("dd/MM/yyyy HH:mm")
-                .format(new Date());
-        drawText(canvas, date, 465, 735, 1, font);          // दिनांक
-
-        // ===== Table (ALIGNED WITH LABELS) =====
-        float[] colX = {55, 110, 205, 250, 300, 350, 415, 475};
-        float startY = 500;
-        float rowGap = 60;
-
-        JSONArray items = CafeUtils.getJsonArrayFromString(
-                (String) requestMap.get("productDetails"));
-
-        for (int i = 0; i < items.length(); i++) {
-
-            Map<String, Object> p =
-                    CafeUtils.getMapFromJson(items.getString(i));
-
-            float y = startY - (i * rowGap);
-
-            drawText(canvas, String.valueOf(i + 1), colX[0], y, 16, font); // अ.क्र.
-            drawText(canvas, getValue(p, "name"), colX[1], y, 16, font);  // डाळीचे नाव
-            drawText(canvas, getValue(p, "quantity"), colX[2], y, 16, font); // वजन
-            drawText(canvas, getValue(p, "plus"), colX[4], y, 16, font); // डाळ
-            drawText(canvas, getValue(p, "waste"), colX[5], y, 16, font);// चुनी
-            drawText(canvas, getValue(p, "wastage2"), colX[6], y, 16, font);// तुट/तुकडा
-            drawText(canvas, getValue(p, "price"), colX[3], y, 16, font);// दर
-            drawText(canvas, getValue(p, "total"), colX[7], y, 16, font);// एकूण
+        // ===== ADD BACKGROUND IMAGE =====
+        try {
+            // Load background image from classpath
+            java.net.URL imageUrl = getClass().getClassLoader().getResource("images/background_bill.jpg");
+            log.info("Image URL from classpath: {}", imageUrl);
+            
+            if (imageUrl == null) {
+                // Try loading from file directly as fallback
+                String imageFilePath = "Backend/src/main/resources/images/background_bill.jpg";
+                java.io.File imageFile = new java.io.File(imageFilePath);
+                log.info("Trying file path: {}, exists: {}", imageFilePath, imageFile.exists());
+                
+                if (imageFile.exists()) {
+                    imageUrl = imageFile.toURI().toURL();
+                    log.info("Image loaded from file: {}", imageUrl);
+                } else {
+                    log.warn("Background image not found in classpath or file system");
+                }
+            }
+            
+            if (imageUrl != null) {
+                com.itextpdf.io.image.ImageData imageData = ImageDataFactory.create(imageUrl);
+                
+                float pageWidth = PageSize.A4.getWidth();
+                float pageHeight = PageSize.A4.getHeight();
+                
+                // Add a new page first since the document doesn't have any pages yet
+                pdf.addNewPage();
+                
+                // Add background image using PdfCanvas to the first page
+                PdfCanvas canvas = new PdfCanvas(pdf.getFirstPage());
+                canvas.addImageFittedIntoRectangle(
+                        imageData,
+                        new com.itextpdf.kernel.geom.Rectangle(0, 0, pageWidth, pageHeight),
+                        false
+                );
+                
+                log.info("Background image added successfully with URL: {}", imageUrl);
+            }
+        } catch (Exception e) {
+            log.warn("Could not load background image: {}", e.getMessage());
+            e.printStackTrace();
         }
 
-        // ===== Grand Total =====
-        drawText(canvas, "एकूण: ₹ " + totalAmount + "/-", 800, 800, 14, font);
+        // Now set margins for content area
+        document.setMargins(20, 20, 20, 20);
+
+        // ===== DATE =====
+        String currentDate = new java.text.SimpleDateFormat("dd/MM/yyyy HH:mm")
+                .format(new java.util.Date());
+        
+        Paragraph dateParagraph = new Paragraph("" + currentDate)
+                .setFont(marathiFont)
+                .setFontSize(14)
+                .setFontColor(TEXT_COLOR)
+                .setBold()
+                .setTextAlignment(TextAlignment.RIGHT);
+        document.add(dateParagraph);
+
+        document.add(new Paragraph("\n"));
+        
+        // ===== CUSTOMER INFO: Name on left, Bill No + Mobile on right =====
+        Table customerTable = new Table(UnitValue.createPercentArray(new float[]{1, 1}));
+        customerTable.setWidth(UnitValue.createPercentValue(100));
+
+        // Left side - Customer Name
+        Cell nameCell = new Cell()
+                .setBorder(null)
+                .add(new Paragraph("नाव: " + name)
+                        .setFont(marathiFont)
+                        .setFontSize(15)
+                        .setFontColor(PRIMARY_COLOR)
+                        .setBold());
+        
+        // Right side - Bill No + Mobile Number
+        Cell infoCell = new Cell()
+                .setBorder(null)
+                .setTextAlignment(TextAlignment.RIGHT)
+                .add(new Paragraph("बिल क्र.: " + bill + "\n" + "संपर्क: " + contactNumber)
+                        .setFont(marathiFont)
+                        .setFontSize(14)
+                        .setFontColor(TEXT_COLOR)
+                        .setBold());
+        
+        customerTable.addCell(nameCell);
+        customerTable.addCell(infoCell);
+        document.add(customerTable);
+
+        document.add(new Paragraph("\n"));
+
+        // ===== PRODUCTS TABLE =====
+        Table productTable = new Table(UnitValue.createPercentArray(new float[]{1, 3, 2, 2, 2, 2, 2, 2}));
+        productTable.setWidth(UnitValue.createPercentValue(100));
+
+        String[] headers = {"अ.क्र.", "नाव", "प्रमाण", "दाल", "चुनी", "तुट/तुकडा", "किंमत", "एकूण"};
+        
+        for (String header : headers) {
+            Cell headerCell = new Cell()
+                    .setPadding(8)
+                    .add(new Paragraph(header)
+                            .setFont(marathiFont)
+                            .setFontSize(13)
+                            .setFontColor(ColorConstants.WHITE)
+                            .setBold()
+                            .setTextAlignment(TextAlignment.CENTER));
+            productTable.addHeaderCell(headerCell);
+        }
+
+        // Table Rows
+        String productDetailsStr = (String) requestMap.get("productDetails");
+        log.info("Parsing product details: {}", productDetailsStr);
+        
+        JSONArray jsonArray = CafeUtils.getJsonArrayFromString(productDetailsStr);
+        log.info("Found {} products", jsonArray.length());
+
+        for (int i = 0; i < jsonArray.length(); i++) {
+            Map<String, Object> product = CafeUtils.getMapFromJson(jsonArray.getString(i));
+            log.info("Product {}: {}", i, product);
+            calculateWastage2ForProduct(product);
+
+            DeviceRgb rowColor = (i % 2 == 0) ? new DeviceRgb(255, 255, 255) : new DeviceRgb(250, 240, 230);
+
+            // Add Sr.No column
+            productTable.addCell(createDataCell(String.valueOf(i + 1), rowColor, marathiFont));
+            productTable.addCell(createDataCell(getProductValue(product, "name"), rowColor, marathiFont));
+            productTable.addCell(createDataCell(getProductValue(product, "quantity"), rowColor, marathiFont));
+            productTable.addCell(createDataCell(getProductValue(product, "plus"), rowColor, marathiFont));
+            productTable.addCell(createDataCell(getProductValue(product, "waste"), rowColor, marathiFont));
+            productTable.addCell(createDataCell(getProductValue(product, "wastage2"), rowColor, marathiFont));
+            productTable.addCell(createDataCell(getProductValue(product, "price"), rowColor, marathiFont));
+            productTable.addCell(createDataCell(getProductValue(product, "total"), rowColor, marathiFont));
+        }
+
+        document.add(productTable);
+
+        // ===== TOTAL SECTION =====
+        document.add(new Paragraph("\n"));
+        
+        Table totalTable = new Table(UnitValue.createPercentArray(new float[]{3, 1}));
+        totalTable.setWidth(UnitValue.createPercentValue(40));
+        totalTable.setHorizontalAlignment(HorizontalAlignment.RIGHT);
+        
+        Cell totalLabel = new Cell()
+                .setPadding(10)
+                .add(new Paragraph("")
+                        .setFont(marathiFont)
+                        .setFontSize(18)
+                        .setFontColor(TEXT_COLOR)
+                        .setBold()
+                        .setTextAlignment(TextAlignment.CENTER));
+        
+        Cell totalValue = new Cell()
+                .setPadding(10)
+                .add(new Paragraph("₹ " + totalAmount + "/-")
+                        .setFont(marathiFont)
+                        .setFontSize(18)
+                        .setFontColor(ColorConstants.WHITE)
+                        .setBold()
+                        .setTextAlignment(TextAlignment.CENTER));
+        
+        totalTable.addCell(totalLabel);
+        totalTable.addCell(totalValue);
+        document.add(totalTable);
 
         document.close();
+        pdf.close();
+        writer.close();
     }
 
-    // Helper method to draw text at specific position
-    private void drawText(PdfCanvas canvas, String text, float x, float y, float fontSize, PdfFont font) {
-        canvas.beginText()
-                .setFontAndSize(font, fontSize)
-                .moveText(x, y)
-                .showText(text != null ? text : "-")
-                .endText();
-    }
-
-    // Helper method to get value from map
-    private String getValue(Map<String, Object> map, String key) {
-        Object value = map.get(key);
+    private String getProductValue(Map<String, Object> product, String key) {
+        Object value = product.get(key);
         return value != null ? String.valueOf(value) : "-";
+    }
+
+    private Cell createDataCell(String text, DeviceRgb backgroundColor, PdfFont font) {
+        return new Cell()
+                .setBackgroundColor(backgroundColor)
+                .setPadding(6)
+                .add(new Paragraph(text != null ? text : "-")
+                        .setFont(font)
+                        .setFontSize(11)
+                        .setFontColor(TEXT_COLOR)
+                        .setTextAlignment(TextAlignment.CENTER)
+                        .setBold());
     }
 
     @Override
@@ -494,5 +621,4 @@ public class BillServiceImpl implements BillService {
         return byteArray;
     }
 }
-
 

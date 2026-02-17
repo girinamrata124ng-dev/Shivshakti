@@ -23,7 +23,19 @@
 
         <mat-form-field apperence="standard" fxFlex>
           <mat-label>नाव</mat-label>
-          <input matInput formControlName="name" required />
+          <div fxLayout="row" fxLayoutAlign="center center">
+            <input matInput formControlName="name" required style="flex: 1;" />
+            <button 
+              type="button" 
+              mat-icon-button 
+              (click)="startVoiceInput()" 
+              [disabled]="isListening"
+              color="primary"
+              matTooltip="Voice Input"
+            >
+              <mat-icon>{{ isListening ? 'mic' : 'mic_none' }}</mat-icon>
+            </button>
+          </div>
           <mat-error
             *ngIf="
               manageOrderForm.controls.name.touched &&
