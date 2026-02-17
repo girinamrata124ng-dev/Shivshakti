@@ -155,16 +155,16 @@ public class BillServiceImpl implements BillService {
         // ===== Header (ALIGNED WITH LABELS) =====
         drawText(canvas, name, 120, 635, 16, font);           // श्रीमान
         drawText(canvas, contactNumber, 120, 597, 16, font); // मो. नं
-        drawText(canvas, String.valueOf(bill), 500, 760, 12, font); // बिल नं
+        drawText(canvas, String.valueOf(bill), 480, 590, 16, font); // बिल नं
 
         String date = new SimpleDateFormat("dd/MM/yyyy HH:mm")
                 .format(new Date());
-        drawText(canvas, date, 465, 735, 1, font);          // दिनांक
+        drawText(canvas, "दिनांक" + date, 55, 100, 12, font);          // दिनांक
 
         // ===== Table (ALIGNED WITH LABELS) =====
-        float[] colX = {55, 110, 205, 250, 300, 350, 415, 475};
+        float[] colX = {55, 110, 205, 250, 307, 368, 435, 500};
         float startY = 500;
-        float rowGap = 60;
+        float rowGap = 40;
 
         JSONArray items = CafeUtils.getJsonArrayFromString(
                 (String) requestMap.get("productDetails"));
@@ -187,7 +187,7 @@ public class BillServiceImpl implements BillService {
         }
 
         // ===== Grand Total =====
-        drawText(canvas, "एकूण: ₹ " + totalAmount + "/-", 800, 800, 14, font);
+        drawText(canvas, "₹ " + totalAmount + "/-", 491, 308, 16, font);
 
         document.close();
     }
